@@ -24,5 +24,26 @@ def sendRemoteCode(serial_number, code):
     return requests.post(deviceURL + "/rc/remote",
       '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
 
+def getLocale(serial_number):
+    global deviceURL
 
+    if deviceURL is "":
+        deviceURL = discoverFreesatBox(serial_number)
 
+    return untangle.parse(deviceURL + "/rc/locale")
+
+def getPowerStatus(serial_number):
+    global deviceURL
+
+    if deviceURL is "":
+        deviceURL = discoverFreesatBox(serial_number)
+
+    return untangle.parse(deviceURL + "/rc/power")
+
+def getNetflixStatus(serial_number):
+    global deviceURL
+
+    if deviceURL is "":
+        deviceURL = discoverFreesatBox(serial_number)
+
+    return untangle.parse(deviceURL + "/rc/apps/Netflix")
