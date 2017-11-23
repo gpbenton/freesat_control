@@ -6,6 +6,12 @@ import untangle
 deviceURL = ""
 
 def discoverFreesatBox(serial_number):
+    """
+    Uses ssdp discovery to find Freesat stb with serial number (known as
+    device id on front end).
+
+    Raises ``NameError`` if the device is not found
+    """
     found_devices = ssdp.discover("urn:dial-multiscreen-org:service:dial:1")
     for device in found_devices:
         if device.location.endswith("xml"):
@@ -15,35 +21,52 @@ def discoverFreesatBox(serial_number):
 
     raise NameError("Device Not Found: {}".format(serial_number))
 
-def sendRemoteCode(serial_number, code):
+def getDeviceURL(serial_number):
     global deviceURL
 
     if deviceURL is "":
         deviceURL = discoverFreesatBox(serial_number)
 
-    return requests.post(deviceURL + "/rc/remote",
+    return deviceURL
+
+def sendRemoteCode(serial_number, code):
+    return requests.post(getDeviceURL(serial_number) + "/rc/remote",
       '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
 
+"""
+The following raise exceptions from untangle.parse()
+
+    Raises ``ValueError`` if the first argument is None / empty string.
+    Raises ``AttributeError`` if a requested xml.sax feature is not found in
+    ``xml.sax.handler``.
+    Raises ``xml.sax.SAXParseException`` if something goes wrong
+    during parsing.
+"""
 def getLocale(serial_number):
-    global deviceURL
-
-    if deviceURL is "":
-        deviceURL = discoverFreesatBox(serial_number)
-
-    return untangle.parse(deviceURL + "/rc/locale")
+    """
+    Return python object representing locale
+    from
+    <?xml version="1.0" ?><response resource="/rc/locale"><locale><deviceid>FS-HMX-01A-0000-FFFF</deviceid><postcode>NN9</postcode><tuners>2</tuners></locale></response>
+    """
+    return untangle.parse(getDeviceURL(serial_number) + "/rc/locale")
 
 def getPowerStatus(serial_number):
-    global deviceURL
-
-    if deviceURL is "":
-        deviceURL = discoverFreesatBox(serial_number)
-
-    return untangle.parse(deviceURL + "/rc/power")
+    """
+    Return python object representing power status
+    from 
+    <?xml version="1.0" ?><response resource="/rc/power"><power state="on" transitioning-to="" no-passive-standby="true" /></response>
+    """
+    return untangle.parse(getDeviceURL(serial_number) + "/rc/power")
 
 def getNetflixStatus(serial_number):
-    global deviceURL
-
-    if deviceURL is "":
-        deviceURL = discoverFreesatBox(serial_number)
-
-    return untangle.parse(deviceURL + "/rc/apps/Netflix")
+    """
+    Return python object representing netflix status
+    from
+    <?xml version="1.0" encoding="UTF-8"?>
+    <service xmlns="urn:dial-multiscreen-org:schemas:dial" dialVer="1.7">
+      <name>Netflix</name>
+      <options allowStop="true"/>
+      <state>stopped</state>
+    </service>
+    """
+    return untangle.parse(getDeviceURL(serial_number) + "/rc/apps/Netflix")
