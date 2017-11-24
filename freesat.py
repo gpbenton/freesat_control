@@ -2,6 +2,7 @@
 import ssdp
 import requests
 import untangle
+from urllib.error import URLError
 
 deviceURL = {}
 
@@ -77,7 +78,11 @@ def getLocale(serial_number):
         2
 
     """
-    return untangle.parse(getDeviceURL(serial_number) + "/rc/locale")
+    try:
+        return untangle.parse(getDeviceURL(serial_number) + "/rc/locale")
+    except URLError:
+        del deviceURL[serial_number]
+        return untangle.parse(getDeviceURL(serial_number) + "/rc/locale")
 
 def getPowerStatus(serial_number):
     """
@@ -90,7 +95,11 @@ def getPowerStatus(serial_number):
         print (p.response.power['state'])
         on
     """
-    return untangle.parse(getDeviceURL(serial_number) + "/rc/power")
+    try:
+        return untangle.parse(getDeviceURL(serial_number) + "/rc/power")
+    except (URLError):
+        del deviceURL[serial_number]
+        return untangle.parse(getDeviceURL(serial_number) + "/rc/power")
 
 def getNetflixStatus(serial_number):
     """
@@ -109,7 +118,11 @@ def getNetflixStatus(serial_number):
         print (p.service.state.cdata)
         stopped
     """
-    return untangle.parse(getDeviceURL(serial_number) + "/rc/apps/Netflix")
+    try:
+        return untangle.parse(getDeviceURL(serial_number) + "/rc/apps/Netflix")
+    except URLError:
+        del deviceURL[serial_number]
+        return untangle.parse(getDeviceURL(serial_number) + "/rc/apps/Netflix")
 
 keycodes = {
     "OK":13,
