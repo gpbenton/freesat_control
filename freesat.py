@@ -55,6 +55,11 @@ def getPowerStatus(serial_number):
     Return python object representing power status
     from 
     <?xml version="1.0" ?><response resource="/rc/power"><power state="on" transitioning-to="" no-passive-standby="true" /></response>
+    example:
+        import freesat
+        p = freesat.getPowerStatus('FS-HMX-01A-0000-6A15')
+        print (p.response.power['state'])
+        on
     """
     return untangle.parse(getDeviceURL(serial_number) + "/rc/power")
 
