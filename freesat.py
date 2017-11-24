@@ -3,7 +3,7 @@ import ssdp
 import requests
 import untangle
 
-deviceURL = ""
+deviceURL = {}
 
 def discoverFreesatBox(serial_number):
     """
@@ -24,10 +24,10 @@ def discoverFreesatBox(serial_number):
 def getDeviceURL(serial_number):
     global deviceURL
 
-    if deviceURL is "":
-        deviceURL = discoverFreesatBox(serial_number)
+    if serial_number not in deviceURL:
+        deviceURL[serial_number] = discoverFreesatBox(serial_number)
 
-    return deviceURL
+    return deviceURL[serial_number]
 
 def sendRemoteCode(serial_number, code):
     return requests.post(getDeviceURL(serial_number) + "/rc/remote",
