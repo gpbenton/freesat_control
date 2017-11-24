@@ -73,5 +73,11 @@ def getNetflixStatus(serial_number):
       <options allowStop="true"/>
       <state>stopped</state>
     </service>
+    exmaple:
+        p = freesat.getNetflixStatus('FS-HMX-01A-0000-6A15')
+        print (p.service.name.cdata)
+        Netflix
+        print (p.service.state.cdata)
+        stopped
     """
     return untangle.parse(getDeviceURL(serial_number) + "/rc/apps/Netflix")
