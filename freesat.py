@@ -51,9 +51,7 @@ def sendRemoteKeys(serial_number, keys):
         return
 
     for key in keys:
-        r = sendRemoteCode(serial_number, keycodes[key])
-        if r.status_code is not 202:
-            raise RuntimeError("Key {} received response: {}".format(key, r))
+        sendRemoteKeys(serial_number, key)
 
 """
 The following raise exceptions from untangle.parse()

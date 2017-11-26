@@ -16,7 +16,8 @@ examples:
     freesat.sendRemoteCode('FS-HMX-01A-0000-6A15', 415)
     
     freesat.sendRemoteKeys('FS-HMX-01A-0000-6A15', "Pause")
-    freesat.sendRemoteKyes('FS-HMX-01A-0000-6A15', "106")
+    freesat.sendRemoteKeys('FS-HMX-01A-0000-6A15', "106")
+    freesat.sendRemoteKeys('FS-HMX-01A-0000-6A15', ("Play", "106"))
     
     p = freesat.getLocale('FS-HMX-01A-0000-6A15')
     print (p.response.locale.tuners.cdata)
