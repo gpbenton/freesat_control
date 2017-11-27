@@ -5,6 +5,8 @@ import untangle
 from urllib.error import URLError
 
 deviceURL = {}
+primaryRegion = {}
+secondaryRegion = {}
 
 def discoverFreesatBox(serial_number):
     """
@@ -48,10 +50,9 @@ def sendRemoteKeys(serial_number, keys):
         r = sendRemoteCode(serial_number, keycodes[keys])
         if r.status_code is not 202:
             raise RuntimeError("Key {} received response: {}".format(keys, r))
-        return
-
-    for key in keys:
-        sendRemoteKeys(serial_number, key)
+    else:
+        for key in keys:
+            sendRemoteKeys(serial_number, key)
 
 """
 The following raise exceptions from untangle.parse()
@@ -121,6 +122,21 @@ def getNetflixStatus(serial_number):
     except URLError:
         del deviceURL[serial_number]
         return untangle.parse(getDeviceURL(serial_number) + "/rc/apps/Netflix")
+
+def getRegions(serial_number):
+    global primaryRegion, secondaryRegion
+
+    if not primaryRegion[serial_number] or not secondaryRegion[serial_number]:
+        l = getLocale(serial_number)
+        postcode = l.response.locale.postcode.cdata
+
+        r = requests.get("http://fdp-sv09-channel-list-v2-0.gcprod1.freetime-platform.net/ms/channels/json/pcodelookup/g2/" + postcode)
+        j = r.json()
+        primaryRegion[serial_number] = j["primaryRegion"]
+        secondaryRegion[serial_number] = j["secondaryRegion"]
+
+    return primaryRegion[serial_number], secondaryRegion[serial_number]
+
 
 keycodes = {
     "OK":13,
