@@ -124,19 +124,82 @@ def getNetflixStatus(serial_number):
         return untangle.parse(getDeviceURL(serial_number) + "/rc/apps/Netflix")
 
 def getRegions(serial_number):
+    """
+    Return a tuple of primaryRegion, secondaryRegiion
+
+    Raises requests.exceptions.HTTPError, as well as above exceptions
+    """
+
     global primaryRegion, secondaryRegion
 
-    if not primaryRegion[serial_number] or not secondaryRegion[serial_number]:
+    if serial_number not in primaryRegion or\
+            serial_number not in secondaryRegion:
         l = getLocale(serial_number)
         postcode = l.response.locale.postcode.cdata
 
         r = requests.get("http://fdp-sv09-channel-list-v2-0.gcprod1.freetime-platform.net/ms/channels/json/pcodelookup/g2/" + postcode)
+        r.raise_for_status()
         j = r.json()
         primaryRegion[serial_number] = j["primaryRegion"]
         secondaryRegion[serial_number] = j["secondaryRegion"]
 
     return primaryRegion[serial_number], secondaryRegion[serial_number]
 
+def getShowCaseEvents(serial_number):
+    """
+    Returns a python representation of json format of showcase events
+
+    Raises ```requests.exceptions.HTTPError```, if the response was not success
+    Raises ```ValueError``` if JSON was not decoded correctly
+    """
+    primaryRegion, secondaryRegion = getRegions(serial_number)
+
+    r = requests.get("http://fdp-regional-v1-0.gcprod1.freetime-platform.net/ms3/regional/sc/json/{}/{}".format(primaryRegion, secondaryRegion))
+    r.raise_for_status()
+    return r.json()
+
+def getOnDemandApps(serial_number):
+    """
+    Return a python representation of json format of OD players on device
+
+    Raises ```requests.exceptions.HTTPError```, if the response was not success
+    Raises ```ValueError``` if JSON was not decoded correctly
+    """
+
+    primaryRegion, secondaryRegion = getRegions(serial_number)
+
+    r = requests.get("http://fdp-regional-v1-0.gcprod1.freetime-platform.net/ms3/regional/od/json/{}/{}".format(primaryRegion, secondaryRegion))
+    r.raise_for_status()
+    return r.json()
+
+def getNowNextAll(serial_number):
+    """
+    Return a python representation of json format of Now and Next programs
+    for each channel
+
+    Raises ```requests.exceptions.HTTPError```, if the response was not success
+    Raises ```ValueError``` if JSON was not decoded correctly
+    """
+
+    primaryRegion, secondaryRegion = getRegions(serial_number)
+
+    r = requests.get("http://fdp-sv23-ms-ip-epg-v1-0.gcprod1.freetime-platform.net/json/nownextall/{}/{}".format(primaryRegion, secondaryRegion))
+    r.raise_for_status()
+    return r.json()
+
+def getChannelList(serial_number):
+    """
+    Return a python representation of json format of the channel list
+
+    Raises ```requests.exceptions.HTTPError```, if the response was not success
+    Raises ```ValueError``` if JSON was not decoded correctly
+    """
+
+    primaryRegion, secondaryRegion = getRegions(serial_number)
+
+    r = requests.get("http://fdp-sv09-channel-list-v2-0.gcprod1.freetime-platform.net/ms/channels/json/chlist/{}/{}".format(primaryRegion, secondaryRegion))
+    r.raise_for_status()
+    return r.json()
 
 keycodes = {
     "OK":13,
