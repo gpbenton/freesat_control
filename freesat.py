@@ -26,7 +26,8 @@ def discoverFreesatBox(serial_number):
 
 def getDeviceURL(serial_number):
     global deviceURL
-
+    if "FS-HMX" not in serial_number:
+        return "http://"+serial_number+":55016"
     if serial_number not in deviceURL:
         deviceURL[serial_number] = discoverFreesatBox(serial_number)
 
