@@ -236,4 +236,7 @@ keycodes = {
     "Audio Description":450,
     "Subtitles":460,
     "Back":461,
+    "Info":457,
+    "Record":416,
+    "Exit":27,
     }
