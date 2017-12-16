@@ -7,30 +7,33 @@ The ssdp discovery library came from https://gist.github.com/dankrause/6000248
 
 # Usage
 
-    import freesat
+    from freesat import Freesat
+    p = Freesat("FS-HMX-01A-0000-6A15")
 
-    freesat.sendRemoteCode(device_id, code)
+or 
+
+    p = Freesat("192.168.0.3:65665")
 
 examples:
     
-    freesat.sendRemoteCode('FS-HMX-01A-0000-6A15', 415)
+    p.sendRemoteCode(415)
     
-    freesat.sendRemoteKeys('FS-HMX-01A-0000-6A15', "Pause")
-    freesat.sendRemoteKeys('FS-HMX-01A-0000-6A15', "106")
-    freesat.sendRemoteKeys('FS-HMX-01A-0000-6A15', ("Play", "106"))
+    p.sendRemoteKeys("Pause")
+    p.sendRemoteKeys("106")
+    p.sendRemoteKeys(("Play", "106"))
     
-    p = freesat.getLocale('FS-HMX-01A-0000-6A15')
-    print (p.response.locale.tuners.cdata)
+    l = p.getLocale()
+    print (l.response.locale.tuners.cdata)
     2
 
-    p = freesat.getPowerStatus('FS-HMX-01A-0000-6A15')
-    print (p.response.power['state'])
+    s = p.getPowerStatus()
+    print (s.response.power['state'])
     on
 
-    p = freesat.getNetflixStatus('FS-HMX-01A-0000-6A15')
-    print (p.service.name.cdata)
+    t = p.getNetflixStatus()
+    print (t.service.name.cdata)
     Netflix
-    print (p.service.state.cdata)
+    print (t.service.state.cdata)
     stopped
 
 
