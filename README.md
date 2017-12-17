@@ -12,7 +12,7 @@ The ssdp discovery library came from https://gist.github.com/dankrause/6000248
 
 or 
 
-    p = Freesat("192.168.0.3:65665")
+    p = Freesat("192.168.0.3")
 
 examples:
     
