@@ -3,6 +3,7 @@ import ssdp
 import requests
 import untangle
 from urllib.error import URLError
+import nmap
 
 class Freesat():
 
@@ -53,21 +54,84 @@ class Freesat():
                 del self.deviceURL
                 return untangle.parse(self.getDeviceURL() + "/rc/apps/Netflix")
 
+        def sendRemoteCode(self, code):
+            try:
+                return requests.post(self.getDeviceURL() + "/rc/remote",
+                  '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
+            except URLError:
+                del self.deviceURL
+                return requests.post(self.getDeviceURL() + "/rc/remote",
+                  '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
+
     class Freesat_ip:
+        """
+        Takes an ip address and uses nmap to determine the port.
+        nmap raises a KeyError when the IP address is incorrect.
+        When the port changes, a requests.exceptions.ConnectionError is raised
+        """
         def __init__(self, ip):
-            self.url = "http://" + ip
+            try:
+                self.ip = ip
+                self.getDeviceURL()
+            except (KeyError):
+                raise RuntimeError("Device Not Found: {}".format(ip))
+
+        def _get_port(self):
+            """
+              Gets the port in use.
+
+              Raises KeyError if device not found
+            """
+            nm = nmap.PortScanner()
+            # Assume port is above 60000 to save time scanning.
+            # may need adjusting
+            nm.scan(self.ip, arguments='-p T:60000-65535')
+            return nm[self.ip].all_tcp()[0]
 
         def getDeviceURL(self):
+            if not hasattr(self, "url"):
+                self.port = self._get_port()
+                self.url = "http://" + self.ip + ":" + str(self.port)
             return self.url
 
         def getLocale(self):
-            return untangle.parse(self.getDeviceURL() + "/rc/locale")
+            try:
+                return untangle.parse(self.getDeviceURL() + "/rc/locale")
+            except requests.exceptions.ConnectionError:
+                del self.url
+                return untangle.parse(self.getDeviceURL() + "/rc/locale")
+            except (KeyError):
+                raise RuntimeError("Device Not Found: {}".format(self.ip))
 
         def getPowerStatus(self):
-            return untangle.parse(self.getDeviceURL() + "/rc/power")
+            try:
+                return untangle.parse(self.getDeviceURL() + "/rc/power")
+            except requests.exceptions.ConnectionError:
+                del self.url
+                return untangle.parse(self.getDeviceURL() + "/rc/power")
+            except (KeyError):
+                raise RuntimeError("Device Not Found: {}".format(self.ip))
+
 
         def getNetflixStatus(self):
-            return untangle.parse(getDeviceURL() + "/rc/apps/Netflix")
+            try:
+                return untangle.parse(getDeviceURL() + "/rc/apps/Netflix")
+            except requests.exceptions.ConnectionError:
+                del self.url
+                return untangle.parse(getDeviceURL() + "/rc/apps/Netflix")
+            except (KeyError):
+                raise RuntimeError("Device Not Found: {}".format(self.ip))
+
+        def sendRemoteCode(self, code):
+            try:
+                return requests.post(self.getDeviceURL() + "/rc/remote",
+                  '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
+            except requests.exceptions.ConnectionError:
+                del self.url
+                return requests.post(self.getDeviceURL() + "/rc/remote",
+                  '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
+            except (KeyError):
+                raise RuntimeError("Device Not Found: {}".format(self.ip))
 
     def __init__(self, id):
         if self.isSerialNumber(id):
@@ -79,8 +143,7 @@ class Freesat():
         return id.startswith("FS-HMX")
 
     def sendRemoteCode(self, code):
-        return requests.post(self.freesat.getDeviceURL() + "/rc/remote",
-          '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
+        return self.freesat.sendRemoteCode(code)
 
     def sendRemoteKeys(self, keys):
         """
