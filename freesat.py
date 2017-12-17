@@ -28,40 +28,15 @@ class Freesat():
 
             raise RuntimeError("Device Not Found: {}".format(self.serial_number))
 
+        def _resetURL(self):
+            del self.deviceURL
+            self.getDeviceURL()
+
         def getDeviceURL(self):
             if not hasattr(self, "deviceURL"):
                 self.deviceURL = self._discoverFreesatBox()
             return self.deviceURL
 
-        def getLocale(self):
-            try:
-                return untangle.parse(self.getDeviceURL() + "/rc/locale")
-            except URLError:
-                del self.deviceURL
-                return untangle.parse(self.getDeviceURL() + "/rc/locale")
-
-        def getPowerStatus(self):
-            try:
-                return untangle.parse(self.getDeviceURL() + "/rc/power")
-            except (URLError):
-                del self.deviceURL
-                return untangle.parse(self.getDeviceURL() + "/rc/power")
-
-        def getNetflixStatus(self):
-            try:
-                return untangle.parse(self.getDeviceURL() + "/rc/apps/Netflix")
-            except URLError:
-                del self.deviceURL
-                return untangle.parse(self.getDeviceURL() + "/rc/apps/Netflix")
-
-        def sendRemoteCode(self, code):
-            try:
-                return requests.post(self.getDeviceURL() + "/rc/remote",
-                  '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
-            except URLError:
-                del self.deviceURL
-                return requests.post(self.getDeviceURL() + "/rc/remote",
-                  '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
 
     class Freesat_ip:
         """
@@ -88,50 +63,20 @@ class Freesat():
             nm.scan(self.ip, arguments='-p T:60000-65535')
             return nm[self.ip].all_tcp()[0]
 
+        def _resetURL(self):
+            try:
+                del self.url
+                self.getDeviceURL()
+            except (KeyError):
+                raise RuntimeError("Device Not Found: {}".format(ip))
+
+
         def getDeviceURL(self):
             if not hasattr(self, "url"):
                 self.port = self._get_port()
                 self.url = "http://" + self.ip + ":" + str(self.port)
             return self.url
 
-        def getLocale(self):
-            try:
-                return untangle.parse(self.getDeviceURL() + "/rc/locale")
-            except requests.exceptions.ConnectionError:
-                del self.url
-                return untangle.parse(self.getDeviceURL() + "/rc/locale")
-            except (KeyError):
-                raise RuntimeError("Device Not Found: {}".format(self.ip))
-
-        def getPowerStatus(self):
-            try:
-                return untangle.parse(self.getDeviceURL() + "/rc/power")
-            except requests.exceptions.ConnectionError:
-                del self.url
-                return untangle.parse(self.getDeviceURL() + "/rc/power")
-            except (KeyError):
-                raise RuntimeError("Device Not Found: {}".format(self.ip))
-
-
-        def getNetflixStatus(self):
-            try:
-                return untangle.parse(getDeviceURL() + "/rc/apps/Netflix")
-            except requests.exceptions.ConnectionError:
-                del self.url
-                return untangle.parse(getDeviceURL() + "/rc/apps/Netflix")
-            except (KeyError):
-                raise RuntimeError("Device Not Found: {}".format(self.ip))
-
-        def sendRemoteCode(self, code):
-            try:
-                return requests.post(self.getDeviceURL() + "/rc/remote",
-                  '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
-            except requests.exceptions.ConnectionError:
-                del self.url
-                return requests.post(self.getDeviceURL() + "/rc/remote",
-                  '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
-            except (KeyError):
-                raise RuntimeError("Device Not Found: {}".format(self.ip))
 
     def __init__(self, id):
         if self.isSerialNumber(id):
@@ -143,7 +88,14 @@ class Freesat():
         return id.startswith("FS-HMX")
 
     def sendRemoteCode(self, code):
-        return self.freesat.sendRemoteCode(code)
+        try:
+            return requests.post(self.freesat.getDeviceURL() + "/rc/remote",
+              '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
+        except (requests.exceptions.ConnectionError, URLError):
+            self.freesat._resetURL()
+            return requests.post(self.freesat.getDeviceURL() + "/rc/remote",
+              '<?xml version="1.0" ?><remote><key code="{}"/></remote>'.format(code))
+
 
     def sendRemoteKeys(self, keys):
         """
@@ -181,12 +133,17 @@ class Freesat():
         example:
             import freesat
 
-            p = freesat.getLocale('FS-HMX-01A-0000-6A15')
+            r = freesat.Freesat('FS-HMX-01A-0000-6A15')
+            p = r.getLocale()
             print (p.response.locale.tuners.cdata)
             2
 
         """
-        return self.freesat.getLocale()
+        try:
+            return untangle.parse(self.freesat.getDeviceURL() + "/rc/locale")
+        except (requests.exceptions.ConnectionError, URLError):
+            self.freesat._resetURL()
+            return untangle.parse(self.freesat.getDeviceURL() + "/rc/locale")
 
     def getPowerStatus(self):
         """
@@ -195,11 +152,16 @@ class Freesat():
         <?xml version="1.0" ?><response resource="/rc/power"><power state="on" transitioning-to="" no-passive-standby="true" /></response>
         example:
             import freesat
-            p = freesat.getPowerStatus('FS-HMX-01A-0000-6A15')
+            r = freesat.Freesat('FS-HMX-01A-0000-6A15')
+            p = r.getPowerStatus()
             print (p.response.power['state'])
             on
         """
-        return self.freesat.getPowerStatus()
+        try:
+            return untangle.parse(self.freesat.getDeviceURL() + "/rc/power")
+        except (requests.exceptions.ConnectionError, URLError):
+            self.freesat._resetURL()
+            return untangle.parse(self.freesat.getDeviceURL() + "/rc/power")
 
     def getNetflixStatus(self):
         """
@@ -212,13 +174,17 @@ class Freesat():
           <state>stopped</state>
         </service>
         exmaple:
-            p = freesat.getNetflixStatus('FS-HMX-01A-0000-6A15')
+            p = r.getNetflixStatus()
             print (p.service.name.cdata)
             Netflix
             print (p.service.state.cdata)
             stopped
         """
-        return self.freesat.getNetflixStatus()
+        try:
+            return untangle.parse(self.freesat.getDeviceURL() + "/rc/apps/Netflix")
+        except (requests.exceptions.ConnectionError, URLError):
+            self.freesat._resetURL()
+            return untangle.parse(self.freesat.getDeviceURL() + "/rc/apps/Netflix")
 
     def getRegions(self):
         """
@@ -228,7 +194,7 @@ class Freesat():
         """
 
         if (not hasattr(self, "primaryRegion")) or  (not hasattr(self, "secondaryRegion")):
-            l = self.freesat.getLocale()
+            l = self.getLocale()
             postcode = l.response.locale.postcode.cdata
 
             r = requests.get("http://fdp-sv09-channel-list-v2-0.gcprod1.freetime-platform.net/ms/channels/json/pcodelookup/g2/" + postcode)
