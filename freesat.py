@@ -1,5 +1,5 @@
 
-import ssdp
+from . import ssdp
 import requests
 import untangle
 from urllib.error import URLError
