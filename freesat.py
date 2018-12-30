@@ -58,9 +58,9 @@ class Freesat():
               Raises KeyError if device not found
             """
             nm = nmap.PortScanner()
-            # Assume port is above 60000 to save time scanning.
+            # Assume port is above 54 to not hit the 43 dns port save time scanning.
             # may need adjusting
-            nm.scan(self.ip, arguments='-p T:60000-65535')
+            nm.scan(self.ip, arguments='-p T:54-65535')
             return nm[self.ip].all_tcp()[0]
 
         def _resetURL(self):
